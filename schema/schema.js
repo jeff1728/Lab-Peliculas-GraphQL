@@ -114,6 +114,52 @@ const Mutation = new GraphQLObjectType({
         await director.destroy();
         return 'Director eliminado correctamente';
       }
+    },
+    crearPelicula: {
+      type: PeliculaType,
+      args: {
+        titulo: { type: new GraphQLNonNull(GraphQLString) },
+        anio: { type: new GraphQLNonNull(GraphQLInt) },
+        directorId: { type: GraphQLInt }
+      },
+      async resolve(parent, args) {
+        const pelicula = await Pelicula.create({
+          titulo: args.titulo,
+          anio: args.anio
+        });
+        if (args.directorId) {
+          const director = await Director.findByPk(args.directorId);
+          if (director) {
+            await pelicula.setDirector(director);
+          }
+        }
+        return pelicula;
+      }
+    },
+    crearActor: {
+      type: ActorType,
+      args: {
+        nombre: { type: new GraphQLNonNull(GraphQLString) }
+      },
+      async resolve(parent, args) {
+        return await Actor.create({
+          nombre: args.nombre
+        });
+      }
+    },
+    asociarActorPelicula: {
+      type: GraphQLString,
+      args: {
+        peliculaId: { type: new GraphQLNonNull(GraphQLInt) },
+        actorId: { type: new GraphQLNonNull(GraphQLInt) }
+      },
+      async resolve(parent, args) {
+        const pelicula = await Pelicula.findByPk(args.peliculaId);
+        const actor = await Actor.findByPk(args.actorId);
+        if (!pelicula || !actor) throw new Error('Película o Actor no encontrado');
+        await pelicula.addActor(actor);
+        return 'Actor asociado a la película correctamente';
+      }
     }
   }
 });
